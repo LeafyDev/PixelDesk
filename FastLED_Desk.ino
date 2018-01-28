@@ -1,4 +1,4 @@
-#include <FastLED.h>
+#include "FastLED.h"
 #include "Enums.h"
 
 #define STRIP_PIN 6
@@ -11,7 +11,7 @@
 
 #define ANIMATION_DELAY 20
 
-int sBrightness = 230;
+int sBrightness = 200;
 int rBrightness = 5;
 
 int pos = 0;
@@ -19,66 +19,130 @@ int pos = 0;
 CRGB stripLEDs[STRIP_LEDCOUNT];
 CRGB ringLEDs[RING_LEDCOUNT];
 
-void ClearLEDs(int = 0);
-void sSetColor(int, CRGB, bool = true);
-void rSetColor(int, CRGB, bool = true);
+void clear_leds(target = both);
+void set_color(target, int, CRGB, bool = true);
 
-void Sweep(Mode, CRGB);
-
-void rainbow(byte);
-CRGB rainbowOrder(byte);
-
+void sweep(target, CRGB&);
+void rainbow_anim(byte);
+CRGB rainbow_order(byte);
 
 void setup()
 {
 	FastLED.addLeds<NEOPIXEL, 6>(stripLEDs, STRIP_LEDCOUNT);
 	FastLED.addLeds<NEOPIXEL, 5>(ringLEDs, RING_LEDCOUNT);
 
-	ClearLEDs();
+	clear_leds();
 
-	Sweep(strip, CRGB::Red);
-	Sweep(strip, CRGB::Green);
-	Sweep(strip, CRGB::Blue);
+	sweep(strip, CRGB::Red);
+	sweep(strip, CRGB::Green);
+	sweep(strip, CRGB::Blue);
 
-	/*for (int i = 0; i < STRIP_ACTIVECOUNT; i++)
+	for (int i = 0; i < STRIP_ACTIVECOUNT; i++)
 	{
-		sSetColor(i, CRGB::White);
+		set_color(strip, i, CRGB::White);
 		FastLED.delay(ANIMATION_DELAY);
-	}*/
+	}
 
-	Sweep(ring, CRGB::Red);
-	Sweep(ring, CRGB::Green);
-	Sweep(ring, CRGB::Blue);
+	sweep(ring, CRGB::Red);
+	sweep(ring, CRGB::Green);
+	sweep(ring, CRGB::Blue);
 
 	for (int i = 0; i < RING_LEDCOUNT; i++)
 	{
-		rSetColor(i, CRGB::White);
+		set_color(ring, i, CRGB::White);
 		FastLED.delay(ANIMATION_DELAY);
 	}
 }
 
-uint8_t thishue = 0;
-uint8_t deltahue = 15;
-
 void loop()
 {
-	rainbow(pos);
-	pos++;
-	FastLED.delay(ANIMATION_DELAY * 5);
+	rainbow_anim(pos);
+	pos--;
+	FastLED.delay(ANIMATION_DELAY * 4);
 }
 
-void rainbow(byte startPosition)
+void clear_leds(const target board = both)
 {
-	int rainbowScale = 192 / RING_LEDCOUNT;
-
-	for (int i = 0; i < RING_LEDCOUNT; i++)
+	switch (board)
 	{
-		rSetColor(i, rainbowOrder((rainbowScale * (i + startPosition)) % 192), false);
+	case strip:
+		fill_solid(stripLEDs, STRIP_ACTIVECOUNT, CRGB::Black);
+		FastLED[strip].showLeds();
+		break;
+	case ring:
+		fill_solid(ringLEDs, RING_LEDCOUNT, CRGB::Black);
+		FastLED[ring].showLeds();
+		break;
+	default:
+		fill_solid(stripLEDs, STRIP_ACTIVECOUNT, CRGB::Black);
+		fill_solid(ringLEDs, RING_LEDCOUNT, CRGB::Black);
+		FastLED[strip].showLeds();
+		FastLED[ring].showLeds();
+		break;
+	}
+}
+
+void set_color(const target board, const int pixel, const CRGB color, const bool show = true)
+{
+	switch (board)
+	{
+		case strip:
+			stripLEDs[pixel].r = map(color.r, 0, 255, 0, sBrightness);
+			stripLEDs[pixel].g = map(color.g, 0, 255, 0, sBrightness);
+			stripLEDs[pixel].b = map(color.b, 0, 255, 0, sBrightness);
+			break;
+		case ring:
+			ringLEDs[pixel].r = map(color.r, 0, 255, 0, rBrightness);
+			ringLEDs[pixel].g = map(color.g, 0, 255, 0, rBrightness);
+			ringLEDs[pixel].b = map(color.b, 0, 255, 0, rBrightness);
+			break;
+		default:
+			break;
+	}
+
+	if (show)
+		FastLED[board].showLeds();
+}
+
+void sweep(const target board, const CRGB& color)
+{
+	switch (board)
+	{
+		case strip:
+			for (auto i = 0; i < STRIP_ACTIVECOUNT; i++)
+			{
+				set_color(strip, i, color);
+				FastLED.delay(ANIMATION_DELAY);
+				set_color(strip, i, CRGB::Black);
+			}
+			break;
+		case ring:
+			for (auto i = 0; i < RING_LEDCOUNT; i++)
+			{
+				set_color(ring, i, color);
+				FastLED.delay(ANIMATION_DELAY);
+				set_color(ring, i, CRGB::Black);
+			}
+			break;
+		case none:
+		case both:
+		default:
+			break;
+	}
+}
+
+void rainbow_anim(const byte start_position)
+{
+	const auto rainbow_scale = 192 / RING_LEDCOUNT;
+
+	for (auto i = 0; i < RING_LEDCOUNT; i++)
+	{
+		set_color(ring, i, rainbow_order(rainbow_scale * (i + start_position) % 192), false);
 	}
 	FastLED[ring].showLeds();
 }
 
-CRGB rainbowOrder(byte position)
+CRGB rainbow_order(byte position)
 {
 	CRGB ret;
 
@@ -87,8 +151,6 @@ CRGB rainbowOrder(byte position)
 		ret.r = 0xFF;
 		ret.g = position * 8;
 		ret.b = 0x00;
-
-		return ret;
 	}
 	else if (position < 63)
 	{
@@ -97,8 +159,6 @@ CRGB rainbowOrder(byte position)
 		ret.r = 0xFF - position * 8;
 		ret.g = 0xFF;
 		ret.b = 0x00;
-
-		return ret;
 	}
 	else if (position < 95)
 	{
@@ -107,8 +167,6 @@ CRGB rainbowOrder(byte position)
 		ret.r = 0x00;
 		ret.g = 0xFF;
 		ret.b = position * 8;
-
-		return ret;
 	}
 	else if (position < 127)
 	{
@@ -117,8 +175,6 @@ CRGB rainbowOrder(byte position)
 		ret.r = 0x00;
 		ret.g = 0xFF - position * 8;
 		ret.b = 0xFF;
-
-		return ret;
 	}
 	else if (position < 159)
 	{
@@ -127,8 +183,6 @@ CRGB rainbowOrder(byte position)
 		ret.r = position * 8;
 		ret.g = 0x00;
 		ret.b = 0xFF;
-
-		return ret;
 	}
 	else
 	{
@@ -137,72 +191,7 @@ CRGB rainbowOrder(byte position)
 		ret.r = 0xFF;
 		ret.g = 0x00;
 		ret.b = 0xFF - position * 8;
-
-		return ret;
 	}
-}
 
-/// <summary>Clears either 1-strip, 2-ring, else all</summary>
-void ClearLEDs(int type = 0)
-{
-	switch (type)
-	{
-		case 1:
-			fill_solid(stripLEDs, STRIP_ACTIVECOUNT, CRGB::Black);
-			FastLED[strip].showLeds();
-			break;
-		case 2:
-			fill_solid(ringLEDs, RING_LEDCOUNT, CRGB::Black);
-			FastLED[ring].showLeds();
-			break;
-		default:
-			fill_solid(stripLEDs, STRIP_ACTIVECOUNT, CRGB::Black);
-			fill_solid(ringLEDs, RING_LEDCOUNT, CRGB::Black);
-			FastLED[strip].showLeds();
-			FastLED[ring].showLeds();
-			break;
-	}
-}
-
-void sSetColor(int pixel, CRGB color, bool show = true)
-{
-	stripLEDs[pixel].r = map(color.r, 0, 255, 0, sBrightness);
-	stripLEDs[pixel].g = map(color.g, 0, 255, 0, sBrightness);
-	stripLEDs[pixel].b = map(color.b, 0, 255, 0, sBrightness);
-
-	if(show)
-		FastLED[strip].showLeds();
-}
-
-void rSetColor(int pixel, CRGB color, bool show = true)
-{
-	ringLEDs[pixel].r = map(color.r, 0, 255, 0, rBrightness);
-	ringLEDs[pixel].g = map(color.g, 0, 255, 0, rBrightness);
-	ringLEDs[pixel].b = map(color.b, 0, 255, 0, rBrightness);
-
-	if (show)
-		FastLED[ring].showLeds();
-}
-
-void Sweep(Mode mode, CRGB color)
-{
-	switch (mode)
-	{
-		case strip:
-			for (int i = 0; i < STRIP_ACTIVECOUNT; i++)
-			{
-				sSetColor(i, color);
-				FastLED.delay(ANIMATION_DELAY);
-				sSetColor(i, CRGB::Black);
-			}
-			break;
-		case ring:
-			for (int i = 0; i < RING_LEDCOUNT; i++)
-			{
-				rSetColor(i, color);
-				FastLED.delay(ANIMATION_DELAY);
-				rSetColor(i, CRGB::Black);
-			}
-			break;
-	}
+	return ret;
 }
