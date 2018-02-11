@@ -23,13 +23,14 @@ void clear_leds(target = both);
 void set_color(target, int, CRGB, bool = true);
 
 void sweep(target, CRGB&);
+void circle_anim(bool, int, CRGB&, int);
 void rainbow_anim(byte);
 CRGB rainbow_order(byte);
 
 void setup()
 {
 	FastLED.addLeds<NEOPIXEL, 6>(stripLEDs, STRIP_LEDCOUNT);
-	FastLED.addLeds<NEOPIXEL, 5>(ringLEDs, RING_LEDCOUNT);
+	//FastLED.addLeds<NEOPIXEL, 5>(ringLEDs, RING_LEDCOUNT);
 
 	clear_leds();
 
@@ -43,42 +44,44 @@ void setup()
 		FastLED.delay(ANIMATION_DELAY);
 	}
 
-	sweep(ring, CRGB::Red);
-	sweep(ring, CRGB::Green);
-	sweep(ring, CRGB::Blue);
+	//sweep(ring, CRGB::Red);
+	//sweep(ring, CRGB::Green);
+	//sweep(ring, CRGB::Blue);
 
-	for (int i = 0; i < RING_LEDCOUNT; i++)
+	/*for (int i = 0; i < RING_LEDCOUNT; i++)
 	{
 		set_color(ring, i, CRGB::White);
 		FastLED.delay(ANIMATION_DELAY);
-	}
+	}*/
+
+	FastLED.delay(1000);
 }
 
 void loop()
 {
-	rainbow_anim(pos);
+	/*rainbow_anim(pos);
 	pos--;
-	FastLED.delay(ANIMATION_DELAY * 4);
+	FastLED.delay(ANIMATION_DELAY * 4);*/
 }
 
 void clear_leds(const target board = both)
 {
 	switch (board)
 	{
-	case strip:
-		fill_solid(stripLEDs, STRIP_ACTIVECOUNT, CRGB::Black);
-		FastLED[strip].showLeds();
-		break;
-	case ring:
-		fill_solid(ringLEDs, RING_LEDCOUNT, CRGB::Black);
-		FastLED[ring].showLeds();
-		break;
-	default:
-		fill_solid(stripLEDs, STRIP_ACTIVECOUNT, CRGB::Black);
-		fill_solid(ringLEDs, RING_LEDCOUNT, CRGB::Black);
-		FastLED[strip].showLeds();
-		FastLED[ring].showLeds();
-		break;
+		case strip:
+			fill_solid(stripLEDs, STRIP_ACTIVECOUNT, CRGB::Black);
+			FastLED[strip].showLeds();
+			break;
+		case ring:
+			fill_solid(ringLEDs, RING_LEDCOUNT, CRGB::Black);
+			FastLED[ring].showLeds();
+			break;
+		default:
+			fill_solid(stripLEDs, STRIP_ACTIVECOUNT, CRGB::Black);
+			fill_solid(ringLEDs, RING_LEDCOUNT, CRGB::Black);
+			FastLED[strip].showLeds();
+			FastLED[ring].showLeds();
+			break;
 	}
 }
 
@@ -95,8 +98,6 @@ void set_color(const target board, const int pixel, const CRGB color, const bool
 			ringLEDs[pixel].r = map(color.r, 0, 255, 0, rBrightness);
 			ringLEDs[pixel].g = map(color.g, 0, 255, 0, rBrightness);
 			ringLEDs[pixel].b = map(color.b, 0, 255, 0, rBrightness);
-			break;
-		default:
 			break;
 	}
 
@@ -124,10 +125,92 @@ void sweep(const target board, const CRGB& color)
 				set_color(ring, i, CRGB::Black);
 			}
 			break;
-		case none:
-		case both:
-		default:
-			break;
+	}
+}
+
+void circle_anim(const bool clockwise, const int pixelCount, const CRGB& color, const int loops)
+{
+	int pixel1 = 14;
+	int pixel2 = 2;
+	int pixel3 = 6;
+	int pixel4 = 10;
+
+	if (clockwise)
+	{
+		switch (pixelCount)
+		{
+			case 1:
+				for (int i = 0; i < loops; i++)
+				{
+					for (int j = 0; j < RING_LEDCOUNT; j++)
+					{
+						if (pixel1 > 15)
+							pixel1 = 0;
+
+						set_color(ring, pixel1, color);
+						FastLED.delay(ANIMATION_DELAY * 4);
+						set_color(ring, pixel1, CRGB::Black);
+						pixel1++;
+					}
+				}
+				break;
+			case 2:
+				for (int i = 0; i < loops; i++)
+				{
+					for (int j = 0; j < RING_LEDCOUNT; j++)
+					{
+						if (pixel1 > 15)
+							pixel1 = 0;
+
+						if (pixel3 > 15)
+							pixel3 = 0;
+
+						set_color(ring, pixel1, color, false);
+						set_color(ring, pixel3, color);
+						FastLED.delay(ANIMATION_DELAY * 4);
+						set_color(ring, pixel1, CRGB::Black, false);
+						set_color(ring, pixel3, CRGB::Black);
+						pixel1++;
+						pixel3++;
+					}
+				}
+				break;
+			case 3:
+				break;
+			case 4:
+				for (int i = 0; i < loops; i++)
+				{
+					for (int j = 0; j < RING_LEDCOUNT; j++)
+					{
+						if (pixel1 > 15)
+							pixel1 = 0;
+
+						if (pixel2 > 15)
+							pixel2 = 0;
+
+						if (pixel3 > 15)
+							pixel3 = 0;
+
+						if (pixel4 > 15)
+							pixel4 = 0;
+
+						set_color(ring, pixel1, color, false);
+						set_color(ring, pixel2, color, false);
+						set_color(ring, pixel3, color, false);
+						set_color(ring, pixel4, color);
+						FastLED.delay(ANIMATION_DELAY * 4);
+						set_color(ring, pixel1, CRGB::Black, false);
+						set_color(ring, pixel2, CRGB::Black, false);
+						set_color(ring, pixel3, CRGB::Black, false);
+						set_color(ring, pixel4, CRGB::Black);
+						pixel1++;
+						pixel2++;
+						pixel3++;
+						pixel4++;
+					}
+				}
+				break;
+		}
 	}
 }
 
